@@ -1,0 +1,421 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>緯特DVR歷史調閱測試頁面</title>
+    <script src="pvCommnnNVR.js" type="text/javascript"></script>
+    
+</head>
+<body>
+    <div id="vdoinfo"> &nbsp </div>
+    <object id="pvOcx" style="border: solid gray 1pt; width: 500px; height: 500px;" classid="CLSID:516F8362-1784-4E7A-9961-26A7741BACFC"
+        codebase="RemoteClientWeb.cab#version=1.0.0.5">
+    </object>
+    <p> 
+        <input type="button" id="init" value="init" onclick="init();" />
+        <input type="button" id="showlist" value="showlist" onclick="search();" />
+        <input type="button" id="doConnect" value="doConnect" onclick="doConnect();" />
+        <input type="button" id="play" value="play" onclick="play()" />
+        <input type="button" id="pause" value="pause" onclick="pause();" />
+        <input type="button" id="stop" value="stop" onclick="stop();" />
+        <input type="button" id="snapshot" value="snapshot" onclick="snapshot();" />
+        <input type="button" id="quick" value="quick" onclick="quick();" />
+        <input type="button" id="slow" value="slow" onclick="slow();" />
+        <input type="button" id="close" value="close" onclick="close();" />
+        <input type="button" id="prevframe" value="prevframe" onclick="prevframe();" />
+        
+
+    </p>
+
+    <div id="filelistheader"></div>
+	<div id="filelist"></div>
+
+    <script language="javascript" type="text/javascript">
+        var ip = "10.144.183.201";
+        var username = "1111";
+        var password = "1111";
+        var port = "7000";
+        var playfile = "";
+        var dc = document;
+        var g_auth = "&loginusername=" + username + "&loginpassword=" + password;
+        //檔案列表.
+        var g_fileList = new FileList(document.getElementById("filelist"), document.getElementById("filelistheader"));
+        var g_mode = 0;
+        var g_st_cannotConnect = false;
+        var g_bSeqPlay = true, g_click = false;
+
+
+
+        function init() {
+            if (!pvOcx.Login(ip, port, username, password))
+                alert("not login!");
+
+            //            pvOcx.HSPlayBackOpenStream(0, 0, false);
+            //            pvOcx.HSPlayBackOpenFile(0, playfile);
+        }
+
+        function doConnect() {
+            pvOcx.Search("2012/10/18_12:4:4_12:14:4", "0");
+            vdoinfo.innerHTML = g_fileList.info;
+        }
+
+        function search() {
+            g_fileList.setSearchRange("&date=2012-10-18,13", "&cam=1");
+            g_fileList.search();
+            g_fileList.showList();
+            //            pvOcx.Search(g_fileList.getTimeRange(), g_fileList.ch);
+            vdoinfo.innerHTML = g_fileList.info;
+        }
+
+        function play() {
+            var ec = pvOcx.Play();
+            if (ec != 1) error(ec);
+        }
+
+        function pause() {
+//            pvOcx.HSPlayBackPause(0);
+            pvOcx.Pause();
+        }
+
+
+        function stop() {
+            pvOcx.Stop();
+        }
+
+        function slow() {
+            pvOcx.SlowPlay();
+        }
+
+        function quick() {
+            pvOcx.QuickPlay();
+        }
+
+        function record() {
+
+        }
+
+        function snapshot() {
+            pvOcx.SnapShot("","");
+        }
+
+        function close() {
+            pvOcx.Close();
+        }
+
+        function prevframe() {
+            pvOcx.PrevFrame();
+        }
+
+        function error(ec) {
+            var eString = { 0: "general error", 1: "ok", 1002: "video must ifram", 1003: "version error",
+                1004: "stream data error", 1005: "port num over", 1006: "decode not init", 1007: "is init",
+                1008: "is not init", 1009: "open file failed", 1010: "file not open", 1011: "avi file not close",
+                1012: "avi file not open", 1013: "play speed over index"
+            }
+            alert(eString[ec]);
+        }
+
+        //遠端檔案列表物件.
+        function FileList(container, headercontainer) {
+            this.domNode = container;
+            //            this.imglist = new ImageList(document.getElementById("imglist"));
+            if (headercontainer) {
+                var ntab = new Table(headercontainer);
+                //                ntab.domNode.className = "liststyle";
+                var tr = ntab.setHeader("開始時間", "檔案長度");
+                tr.childNodes[0].style.width = "203px";
+            }
+        }
+
+        //遠端檔案列表設定搜尋範圍.
+        FileList.prototype.setSearchRange = function (time, ch) {
+            if (!time) {
+                alert("please set a timerange"); return;
+            }
+            //parse from DatePicker. time format=2012-10-18,13(12點~13點)
+            var a = time.split(",");
+            var day = a[0].substr(6).replace(/-/gi, "/");
+            var iv = parseInt(a[1], 10) - 1;
+            //format.
+            this.timeStr = day + "_" + iv + ":00:00_" + iv + ":59:59";
+            this.ch = ch ? parseInt(ch.split("=")[1], 10) - 1 : 0;
+        }
+
+        //遠端檔案列表執行搜尋動作.
+        FileList.prototype.search = function () {
+            var cgi = "http://" + ip + "/CGIListFiles.cgi?CMD=ListRemoFiles" + g_auth + "&TimeRange=" + this.timeStr + "&CH=" + this.ch + "&JSON=true" + "&MODUL=" + g_mode + "&RND=" + Math.random();
+            try {
+                g_httpReq.open("GET", cgi, false);
+                g_httpReq.send();
+                if (this.result) {
+                    clearChildNode(this.result);
+                    delete this.result;
+                }
+                this.result = eval("(" + g_httpReq.responseText + ")");
+            } catch (e) {
+                return false;
+            }
+        }
+
+        //遠端檔案列表列出檔案(以時間為索引)
+        FileList.prototype.showList = function () {
+            clearChildNode(this.domNode);
+            //            this.imglist.clear();
+            //            delete this.imglist;
+            //            this.imglist = new ImageList(document.getElementById("imglist"));
+            if (this.newTab) clearChildNode(this.newTab.domNode);
+            delete this.newTab;
+
+            var MAX_IMGVIEW = 120;
+            var imgCount = 0;
+
+
+            if (this.result && this.result.length) {
+                var newTab = new Table(this.domNode);
+                newTab.domNode.className = "liststyle";
+                this.newTab = newTab;
+
+                for (var i in this.result) {
+                    //取得檔名裡的檔案時間.
+                    var fileDate = getDateFromFileName(this.result[i]["File_Name"]);
+                    //由BeginTime/EndTime計算影片長度.
+                    var lenS = getSecsFromTimeStr(this.result[i]["Begin_Time"], this.result[i]["End_Time"]);
+
+                    //顯示於列表的時間.
+                    var BgDate = this.formatDate(fileDate);
+                    //顯示於標題的時間與頻道名.
+                    var fullDate = fileDate.toLocaleDateString() + " " + fileDate.toLocaleTimeString();
+                    var chname = this.result[i]["Channel_Name"];
+
+                    //將資料加至列表.
+                    var tr = this.newTab.newRow();
+                    //			this.newTab.addData(parseInt(this.result[i]["CamID"])+1);
+                    //			this.newTab.addData(chname);
+                    this.newTab.addData(BgDate);
+                    this.newTab.addData(lenS);
+                    //			this.newTab.addData(this.result[i]["FourCC"]);
+                    //將索引圖片加至圖片列表.
+                    //                    if (imgCount++ <= MAX_IMGVIEW) //限制圖片預覽數.
+                    //                        if (this.imglist) this.imglist.addImg(tr, this.result[i]["IMGPATH"]);
+
+                    //搜尋的開始時間.
+                    //			/*opt1. Begin-EndTime*/	var sTimestr=this.result[i]["Begin_Time"].replace(/-/g,"/").replace(" ","_")+"_"+this.result[i]["End_Time"].split(" ")[1];
+                    /*opt2. FileTime->Len*/var sTimestr = this.toSearchDateString(BgDate, lenS);
+
+                    //列表動態效果.
+                    //                    tr.clsState = "listitem itemnormal";
+                    //                    tr.className = tr.clsState;
+                    tr.selected = false;
+                    tr.lenS = lenS;
+                    this.chinfo = chname + "&nbsp" + fileDate.toLocaleDateString();
+                    var edDate = new Date(fileDate.getFullYear(), fileDate.getMonth() + 1, fileDate.getDate(),
+								fileDate.getHours() + parseInt(lenS.split(":")[0], 10),
+								fileDate.getMinutes() + parseInt(lenS.split(":")[1], 10),
+								fileDate.getSeconds() + parseInt(lenS.split(":")[2], 10));
+                    //                    this.setAnimateList(tr, sTimestr, this.ch, chname + "&nbsp" + fullDate + " ~ " + edDate.toLocaleTimeString());
+                }
+            } else
+                addSp(this.domNode, g_langStr["IDS_NODATA"]);
+        }
+
+        /* st=HH:MM:SS,len=HH:MM:SS
+        */
+        FileList.prototype.getEndTime = function (st, len) {
+            if (!len) len = "00:00:00";
+            return new Date(0, 0, 0, parseInt(st.split(":")[0], 10) + parseInt(len.split(":")[0], 10),
+							 parseInt(st.split(":")[1], 10) + parseInt(len.split(":")[1], 10),
+							 parseInt(st.split(":")[2], 10) + parseInt(len.split(":")[2], 10), 0);
+        }
+
+        /* d=YYYY/MM/DD HH:mm:SS  s=HH:mm:SS
+        */
+        FileList.prototype.toSearchDateString = function (d, s) {
+            var edTime = this.getEndTime(d.split(" ")[1], "00:00:03");
+            var ret = d.replace(/ /, "_") + "_" + edTime.getHours() + ":" + edTime.getMinutes() + ":" + edTime.getSeconds();
+            return ret;
+        }
+
+        FileList.prototype.formatDate = function (dt) {
+            return dt.getFullYear() + "/" + paddingLeft("" + (dt.getMonth() + 1), 2) + "/" + paddingLeft("" + dt.getDate(), 2) + " " +
+			paddingLeft("" + dt.getHours(), 2) + ":" + paddingLeft("" + dt.getMinutes(), 2) + ":" + paddingLeft("" + dt.getSeconds(), 2);
+        }
+
+        //遠端檔案列表設定動態效果
+        FileList.prototype.setAnimateList = function (node, time, ch, info) {
+            var inst = this;
+            node.onmouseover = function () {
+                node.className = "listitem itemover";
+            }
+            node.onmouseout = function () {
+                node.className = node.clsState;
+            }
+            document.onkeydown = function (e) {
+                if (event.keyCode == '17') inst.ctrl = true;
+            }
+            document.onkeyup = function (e) {
+                if (event.keyCode == '17') inst.ctrl = false;
+            }
+
+            //	this.ctrl=true; //固定使用多選模式.
+
+            node.time = time;
+            //設定列表項目按下動作.
+            node.onclick = function () {
+                //		if( g_st_cannotConnect){
+                //			alert(g_langStr["IDS_HINTSTOP"]);
+                //			return;
+                //		}
+                if (!b_ie) return; //test on non-ie.
+                //顯示所選項目.
+                this.selected = !this.selected;
+                //沒按ctrl時只選click到那一個.
+                if (!inst.ctrl) {
+                    inst.clearSelect();
+                    this.selected = true;
+                } else {
+                    if (!inst.checkAnySelected())//若沒任何選中則選這個,因為只可能在按住ctrl時發生.
+                        this.selected = true;
+                }
+                inst.ch = ch;
+                inst.select(this);
+
+                //若沒斷線則先斷線再進行已選項目的連線.
+                if (g_st_cannotConnect) {
+                    g_click = true;
+                    stop(); //
+                }
+                else
+                    search();
+            }
+        }
+
+        /*任一選中就回傳true.
+        */
+        FileList.prototype.checkAnySelected = function () {
+            var tr = this.newTab.domNode.firstChild.firstChild;
+            while (tr) {
+                if (tr.selected) return true;
+                tr = tr.nextSibling;
+            }
+            return false;
+        }
+
+        //多選時間長度:以選中的最小值為開始,最大值為結束.
+        FileList.prototype.getTimeRange = function () {
+            var date, bgT, edT, cbgTm, bgDt, edDt, cbgDt, cedDt;
+            var tb = this.newTab.domNode.firstChild;
+            var tr = tb.firstChild;
+            if (tr.time)
+                date = tr.time.split("_")[0];
+            var isSel = false;
+
+            while (tr) {
+                if (tr.selected) {
+                    isSel = true;
+                    //比對每筆欄位.
+                    cbgTm = tr.time.split("_")[1];
+                    cbgDt = this.getEndTime(cbgTm);
+                    cedDt = this.getEndTime(cbgTm, tr.lenS);
+                    var cedTm = cedDt.getHours() + ":" + cedDt.getMinutes() + ":" + cedDt.getSeconds();
+
+                    if (!bgT) bgT = cbgTm;
+                    if (!edT) edT = cedTm;
+                    bgDt = this.getEndTime(bgT);
+                    edDt = this.getEndTime(edT);
+                    //如果加入時間比較小就使用這個時間當開始.
+                    if (bgDt.getTime() > cbgDt.getTime())
+                        bgT = cbgTm;
+                    //比較大就用結束.
+                    if (edDt.getTime() < cedDt.getTime())
+                        edT = cedTm;
+                }
+                tr = tr.nextSibling;
+            }
+            /*	g_bSeqPlay = !isSel;
+            if(!isSel){//若沒任何被選中就是循序播放.
+            this.selNode=this.selNode?this.selNode.nexSibling:tb.firstChild;
+            if(!this.selNode)this.selNode=tb.firstChild;//已達最後一個,so給第一個.
+            bgT=this.selNode.time.split("_")[1];
+            edDt=this.getEndTime(bgT,this.selNode.lenS);
+            edT=edDt.getHours()+":"+edDt.getMinutes()+":"+edDt.getSeconds();
+            }	
+            */
+            //將範圍內的全部變成選取.
+            bgDt = this.getEndTime(bgT);
+            edDt = this.getEndTime(edT);
+            this.selectTimeRange(bgDt, edDt);
+
+            //若循序播放,清空select讓下次進入.
+            //	if(!isSel)this.selNode.selected=false;
+
+            this.info = this.chinfo + "&nbsp" + bgT + "~" + edT;
+            this.prevTime = date + "_" + bgT + "_" + edT;
+            return this.prevTime;
+        }
+
+        FileList.prototype.select = function (node, isSel) {
+            this.selNode = node;
+            if (!node) return node;
+            if (isSel != undefined) node.selected = isSel;
+            node.clsState = (node.selected) ? "listitem itemclicked" : "listitem itemnormal";
+            node.className = node.clsState;
+            return node;
+        }
+
+        FileList.prototype.selectTimeRange = function (bgDate, edDate) {
+            var tr = this.newTab.domNode.firstChild.firstChild;
+            while (tr) {
+                var cbgTim = tr.time.split("_")[1];
+                var cbgDate = this.getEndTime(cbgTim);
+                var cedDate = this.getEndTime(cbgTim, tr.lenS);
+                //範圍內設為選取,範圍外則取消選取.
+                this.select(tr, (cbgDate.getTime() >= bgDate.getTime() && cedDate.getTime() <= edDate.getTime()));
+
+                tr = tr.nextSibling;
+            }
+        }
+
+        FileList.prototype.clearSelect = function () {
+            var tb = this.newTab.domNode.firstChild;
+            var tr = tb.firstChild;
+            this.stime = undefined;
+            while (tr) {
+                this.select(tr, false);
+                tr = tr.nextSibling;
+            }
+        }
+
+        //從檔名裡擷取日期. Vxx-YYYY-MM-DD-HHMMSS.*
+        function getDateFromFileName(strFilename) {
+            var a = strFilename.split("-");
+            var b = strFilename.split("-")[4].split(".")[0];
+            return new Date(a[1], a[2] - 1, a[3], b.substr(0, 2), b.substr(2, 2), b.substr(4, 2), 0);
+        }
+
+        //由開始時間及結束時間計算時間長度. Vxx-YYYY-MM-DD-HHMMSS.*
+        function getSecsFromTimeStr(strBgTime, strEndTime) {
+            try {
+                //將字串轉成Date物件.
+                var y = strBgTime.split("-")[0]; var m = strBgTime.split("-")[1]; var d = strBgTime.split("-")[2].split(" ")[0];
+                var h = strBgTime.split(" ")[1].split(":")[0];
+                var mm = strBgTime.split(" ")[1].split(":")[1];
+                var s = strBgTime.split(" ")[1].split(":")[2];
+                var ms = 0;
+                var bgDate = new Date(y, m, d, h, mm, s, ms);
+                y = strEndTime.split("-")[0]; m = strEndTime.split("-")[1]; d = strEndTime.split("-")[2].split(" ")[0]; ;
+                h = strEndTime.split(" ")[1].split(":")[0];
+                mm = strEndTime.split(" ")[1].split(":")[1];
+                s = strEndTime.split(" ")[1].split(":")[2];
+                var edDate = new Date(y, m, d, h, mm, s, ms);
+                //算出時間長度(ms),格式化成HH:MM:SS
+                s = Math.floor(Math.abs(edDate.getTime() - bgDate.getTime()) / 1000);
+                h = "" + Math.floor(s / 3600);
+                mm = "" + Math.floor(s / 60) - h * 60;
+                s = "" + s % 60;
+                return paddingLeft(h, 2) + ":" + paddingLeft(mm, 2) + ":" + paddingLeft(s, 2);
+            } catch (e) {
+                return -1;
+            }
+        }
+    </script>
+</body>
+</html>

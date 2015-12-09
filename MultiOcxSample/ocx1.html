@@ -1,0 +1,134 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+</head>
+<body onload="Init()" onunload="Exit();">
+<object id="Player" style="border: solid gray 1pt; width: 500px; height: 500px;" classid="CLSID:516F8362-1784-4E7A-9961-26A7741BACFC"
+        codebase="RemoteClientWeb.cab#version=1.0.0.5">
+    </object>
+    <script type="text/javascript" language="JavaScript">
+        var ocx;
+        var ServerIP = "10.144.183.201";
+        var ServerPort = "7000";
+        var ServerUsername = "1111";
+        var ServerPassword = "1111";
+        var ChannelID = "1"; //1開始
+        var SearchStartEndTime = "2012/12/12_09:00:00_10:00:00"; //格式 2012/11/9_10:55:12_10:55:59
+
+        var PlayRate = 1;
+
+        function Init() {
+            ocx = document.getElementById("Player");
+            if (ocx != null) {
+
+                if (!ocx.Login(ServerIP, ServerPort, ServerUsername, ServerPassword)) {
+                    alert("not login!");
+                    return;
+                }
+
+                ocx.Search(SearchStartEndTime, ChannelID);
+
+                setTimeout("ocx.Play()", 2000);
+            }
+            else {
+                alert("not ocx!");
+            }
+        }
+
+        function Exit() {
+            if (ocx != null) {
+                ocx.Stop();
+            }
+        }
+
+        function fnPlay() {
+            if (ocx!= null) {
+                if (fnChkLink()) {
+                    fnSetPlayRate(PlayRate);
+                }
+            }
+        }
+
+        function fnPause() {
+            if (ocx != null) {
+                ocx.Pause();
+            }
+        }
+
+        function fnStop() {
+            if (ocx != null) {
+                ocx.Stop();
+            }
+        }
+
+        function fnRewind() {
+            ocx.Play();
+            ocx.SlowPlay();
+        }
+
+        function fnForward() {
+            ocx.Play();
+            ocx.QuickPlay();
+        }
+
+
+        function fnSetPlayRate(iPlayRate) {
+            if (ocx != null) {
+                PlayRate = iPlayRate;
+                if (fnChkLink()) {
+                    switch(iPlayRate)
+                    {
+                        case 0.5:
+                        case 1:
+                            fnRewind();
+                            break;
+                        case 2:
+                        case 4:
+                            fnForward();
+                            break;
+                    }
+                }
+            }
+        }
+
+        function fnGetPlayRate() {
+            if (ocx != null) {
+                if (fnChkLink()) {
+                    return (PlayRate);
+                }
+            }
+        }
+
+        function fnSnapshot() {
+            if (ocx != null) {
+                if (fnChkLink()) {
+                    ocx.Snapshot("","");
+                }
+            }
+        }
+
+        function fnChkLink() {
+            return true;
+        }
+
+
+        function fnRecord() {
+        }
+
+
+        function fnStopRecord() {
+        }
+
+        function ChangeSize(ww, hh) {
+            ocx.style.width = ww;
+            ocx.style.height = hh;
+        }
+
+
+        function fnAddTag() {
+        }
+
+        function fnListTag() {
+        }
+        </script>
+</body>
+</html>

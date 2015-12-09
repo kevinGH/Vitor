@@ -1,0 +1,38 @@
+﻿<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+<title>Remote Playback</title>
+</head>
+
+<body>
+<center>
+
+<table>
+	<tr><td id=filename ></td></tr>
+	<tr><td colspan=2 height=500 width=500>
+		<object id=pvOcx style="border:solid gray 1pt;width:500;height:500" classid="CLSID:92540958-2A12-44F3-8CA3-31EB21D64A19"  codebase="RemoteClientWeb.cab#version=1.0.0.1"></object>
+	</td></tr>
+	
+	<tr><td align=left>
+		<input type=button id=pause value=" || " onclick="pvOcx.HSPlayBackPause(0)" title="Pause" />
+		<input type=button id=play  value=" ＞ " onclick="onPlay()" title="play"/>
+		<!--<input type=button id=twice value=">" onclick="pvOcx.HSPlayBackSlow(0)" title="slow speed"/>
+		<input type=button id=twice value="＞＞" onclick="pvOcx.HSPlayBackFast(0)" title="2x speed"/>
+		<input type=button id=twice value="<-" onclick="pvOcx.HSPlayBackOneByOneBack(0)" title="one by one back"/>		
+		<input type=button id=twice value="->" onclick="pvOcx.HSPlayBackOneByOne(0)" title="one by one"/>-->
+		<input type=button id=openfile value="Open File" onclick="onOpenFile()" title="Open file"/>
+		<input type=file id=browseFile style="display:none"/>
+	</td>
+	<td align=right>
+		<!--<span id=vdostatus>2010:06:07 99:99:99</span>-->
+	</td>
+	</tr>
+	
+</table>
+<div id=msg></div>
+<div id=msg2></div>
+
+</center>
+</body>
+<script src="remoteplayback.js"></script>
+</html>
